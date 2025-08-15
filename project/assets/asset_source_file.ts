@@ -128,7 +128,7 @@ This is a ts2gd bug. Please create an issue on GitHub for it.`,
 
     return !realName && node.modifiers?.some((v) => v.getText() === "default")
       ? "default"
-      : node.name?.text ?? "Anonymous"
+      : (node.name?.text ?? "Anonymous")
   }
 
   extendedClassName(): string | TsGdError | null {
@@ -251,8 +251,11 @@ ${chalk.green(
     if (classNode && "error" in classNode) {
       return false
     }
-
-    for (const dec of classNode?.decorators ?? []) {
+    const decorators =
+      classNode && ts.canHaveDecorators(classNode)
+        ? ts.getDecorators(classNode)
+        : undefined
+    for (const dec of decorators ?? []) {
       if (dec.expression.getText() === "autoload") {
         return true
       }

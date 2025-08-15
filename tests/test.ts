@@ -468,7 +468,7 @@ const loadTestCases = (): TestCase[] => {
 
 function stringVisibleLength(str: string): number {
   // Remove ANSI escape codes
-  // eslint-disable-next-line no-control-regex
+
   const ansiRegex = /\x1b\[[0-9;]*m/g
   const clean = str.replace(ansiRegex, "")
   // Count Unicode grapheme clusters (for emoji, etc.)
@@ -544,8 +544,8 @@ export const runTests = async () => {
               part.added
                 ? chalk.whiteBright(part.value)
                 : part.removed
-                ? ""
-                : part.value
+                  ? ""
+                  : part.value
             )
             .join("")
         )
@@ -557,8 +557,8 @@ export const runTests = async () => {
               part.added
                 ? ""
                 : part.removed
-                ? chalk.whiteBright(part.value)
-                : part.value
+                  ? chalk.whiteBright(part.value)
+                  : part.value
             )
             .join("")
         )

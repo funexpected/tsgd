@@ -389,7 +389,7 @@ function copyFileSync(source: string, target: string) {
     }
   }
 
-  fs.writeFileSync(targetFile, fs.readFileSync(source))
+  fs.writeFileSync(targetFile, fs.readFileSync(source, { flag: "r" }))
 }
 
 export function copyFolderRecursiveSync(source: string, target: string) {
@@ -466,32 +466,40 @@ export const checkIfMainClass = (
     (statement) =>
       statement.kind === SyntaxKind.ClassDeclaration &&
       // skip class type declarations
-      !(statement.modifiers ?? []).some((m) => m.getText() === "declare")
+      (ts.isClassDeclaration(statement)
+        ? !(statement.modifiers ?? []).some((m) => m.getText() === "declare")
+        : true)
   )
 
   // If file contains only one non inner class then it is main by default
+  const decorators = ts.canHaveDecorators(cls)
+    ? ts.getDecorators(cls)
+    : undefined
   if (
     allClasses.length === 1 &&
     allClasses[0] === cls &&
-    !cls.decorators?.some((v) => v.expression.getText() === "inner")
+    !decorators?.some((v) => v.expression.getText() === "inner")
   ) {
     return true
   }
 
   // Search for non inner classes
-  const mainCandidates = allClasses.filter(
-    (statement) =>
-      !(statement.decorators ?? []).some(
-        (d) => d.expression.getText() === "inner"
-      )
-  )
+  const mainCandidates = allClasses.filter((statement) => {
+    const decorators = ts.canHaveDecorators(statement)
+      ? ts.getDecorators(statement)
+      : undefined
+    return !(decorators ?? []).some((d) => d.expression.getText() === "inner")
+  })
 
   // Try to find class marked by '@main' attribute
-  const markedMainCandidates = mainCandidates.filter((candidate) =>
-    (candidate.decorators ?? [])
+  const markedMainCandidates = mainCandidates.filter((candidate) => {
+    const decorators = ts.canHaveDecorators(candidate)
+      ? ts.getDecorators(candidate)
+      : undefined
+    return (decorators ?? [])
       .map((d) => d.expression.getText())
       .includes("main")
-  )
+  })
 
   if (markedMainCandidates.length === 1) {
     return markedMainCandidates[0] === cls
@@ -510,8 +518,10 @@ export const checkIfMainClass = (
   }
 
   // Search for exported classes
-  const exportedMainCandidates = mainCandidates.filter((statement) =>
-    statement.modifiers?.some((m) => m.getText() === "export")
+  const exportedMainCandidates = mainCandidates.filter(
+    (statement) =>
+      ts.isClassDeclaration(statement) &&
+      statement.modifiers?.some((m) => m.getText() === "export")
   )
 
   // If only one class is exported then it is main by default
@@ -526,6 +536,7 @@ export const checkIfMainClass = (
   if (
     exportedMainCandidates.some(
       (v) =>
+        ts.isClassDeclaration(v) &&
         (v.modifiers ?? []).map((m) => m.getText()).includes("default") &&
         v === cls
     )
