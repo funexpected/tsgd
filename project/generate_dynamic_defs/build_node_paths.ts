@@ -109,27 +109,8 @@ export default function buildNodePathsTypeForScript(
   )[] = []
 
   if (nodesWithScript.length === 0) {
-    if (script.isAutoload()) {
-      // Special logic for autoload classes.
-
-      const rootScene = project.mainScene
-      commonRelativePaths = getAllChildPaths(rootScene.rootNode)
-      references = [{ type: "autoload" }]
-      commonRelativePaths = commonRelativePaths.map(({ path, node }) => ({
-        path: `/root/${path}`,
-        node,
-      }))
-    } else {
-      // This class is never instantiated as a node.
-
-      commonRelativePaths = []
-      references = []
-
-      // TODO: Maybe flag it if it's also never used as a class.
-      // Currently, this is just noise.
-
-      // console.error("Unused class:", className)
-    }
+    commonRelativePaths = []
+    references = []
   } else {
     const relativePathsPerNode = nodesWithScript.map((node) =>
       getAllChildPaths(node, true)

@@ -10,11 +10,19 @@ import { TsGdError, __getErrorsTestOnly } from "../errors"
 import { baseContentForTests } from "../generate_library_defs/generate_base"
 import { ParseNodeType, parseNode } from "../parse_node"
 import { Scope } from "../scope"
+import { TsGdProject } from "../project/project"
+import { ParsedArgs } from "../parse_args"
+import { Paths } from "../project"
+import { AssetSourceFile } from "../project/assets/asset_source_file"
 
-import { createStubSourceFileAsset } from "./stubs"
+function mockProjectPath(...segments: string[]): string {
+  const basePath = path.join(__dirname, "..", "mockProject")
+  return path.join(basePath, ...segments)
+}
 
 export const compileTs = (code: string, isAutoload: boolean): ParseNodeType => {
-  const filename = isAutoload ? "autoload.ts" : "Test.ts"
+  const filename = mockProjectPath(isAutoload ? "Autoload.ts" : "Test.ts")
+  // const filename = isAutoload ? "autoload.ts" : "Test.ts"
 
   const sourceFile = ts.createSourceFile(
     filename,
@@ -63,12 +71,33 @@ export const compileTs = (code: string, isAutoload: boolean): ParseNodeType => {
   }
 
   const program = ts.createProgram(
-    ["Test.ts", "autoload.ts"],
+    [mockProjectPath("Test.ts"), mockProjectPath("Autoload.ts")],
     tsconfigOptions,
     customCompilerHost
   )
 
-  const sourceFileAsset = createStubSourceFileAsset("Test")
+  const args: ParsedArgs = {
+    buildLibraries: false,
+    buildOnly: false,
+    printVersion: false,
+    debug: false,
+    help: false,
+    init: false,
+    tsgdPath: mockProjectPath("ts2gd.json"),
+  }
+
+  const project = new TsGdProject({
+    program,
+    args,
+    initialFilePaths: [
+      mockProjectPath("project.godot"),
+      mockProjectPath("main.tscn"),
+      mockProjectPath("Test.ts"),
+      mockProjectPath("Autoload.ts"),
+    ],
+    ts2gdJson: new Paths(args),
+  })
+  const sourceFileAsset = new AssetSourceFile(filename, project)
 
   // TODO: Make this less silly.
   // I suppose we could actually use the example project
@@ -79,73 +108,7 @@ export const compileTs = (code: string, isAutoload: boolean): ParseNodeType => {
     isConstructor: false,
     program,
     isMainClass: false,
-    project: {
-      args: {
-        buildLibraries: false,
-        buildOnly: false,
-        printVersion: false,
-        debug: false,
-        help: false,
-        init: false,
-      },
-      buildDynamicDefinitions: async () => {},
-      assets: [],
-      program: undefined as any,
-      compileAllSourceFiles: async () => true,
-      shouldBuildLibraryDefinitions: () => false,
-      validateAutoloads: () => [],
-      buildLibraryDefinitions: async () => {},
-      paths: {} as any,
-      definitionBuilder: {} as any,
-      mainScene: {
-        fsPath: "",
-        resPath: "",
-        nodes: [],
-        resources: [],
-        name: "mainScene",
-        project: {} as any,
-        rootNode: {} as any,
-      } as any,
-      godotScenes: () => [],
-      createAsset: () => 0 as any,
-      godotFonts: () => [],
-      godotImages: () => [],
-      godotGlbs: () => [],
-      godotProject: {
-        fsPath: "",
-        autoloads: [{ resPath: "autoload.ts" }],
-        mainScene: {} as any,
-        rawConfig: 0 as any,
-        actionNames: [],
-        project: {} as any,
-        addAutoload: {} as any,
-        removeAutoload: {} as any,
-      },
-      monitor: () => 0 as any,
-      onAddAsset: async () => "",
-      onChangeAsset: async () => "",
-      onRemoveAsset: async () => {},
-      sourceFiles: () => [
-        {
-          exportedTsClassName: () => "",
-          fsPath: "autoload.ts",
-          isProjectAutoload: () => true,
-          isAutoload: () => true,
-          resPath: "",
-          tsRelativePath: "",
-          gdContainingDirectory: "",
-          destroy: () => {},
-          project: {} as any,
-          tsType: () => "",
-          compile: async () => {},
-          gdPath: "",
-          reload: () => {},
-          isDecoratedAutoload: {} as any,
-          ...({} as any), // ssh about private properties.
-        },
-        sourceFileAsset,
-      ],
-    },
+    project,
     sourceFileAsset: sourceFileAsset,
     mostRecentControlStructureIsSwitch: false,
     isAutoload: false,
@@ -311,7 +274,7 @@ type TestResultFail = {
   expected: string
   expectFail?: boolean
   path: string
-  logs?: any[][]
+  logs?: LogArg[][]
 }
 
 const trim = (s: string) => {
@@ -321,6 +284,8 @@ const trim = (s: string) => {
     .filter((x) => x.trim() !== "")
     .join("\n")
 }
+
+const addError = (error: TsGdError) => {}
 
 const removeCommentLines = (s: string) => {
   return s
@@ -367,10 +332,10 @@ const runTest = (
     compiled = compileTs(ts, testCase.isAutoload ?? false)
 
     errors = __getErrorsTestOnly()
-  } catch (e) {
+  } catch (e: unknown) {
     return {
       type: "fail",
-      result: `Threw the following error: ${(e as any).stack}`,
+      result: `Threw the following error: ${e instanceof Error ? e.stack : String(e)}`,
       expected: `No errors`,
       name: testCase.name,
       expectFail: !!testCase.skipped && allowSkip,
@@ -475,6 +440,8 @@ function stringVisibleLength(str: string): number {
   return Array.from(clean).length
 }
 
+type LogArg = string | number | boolean | object | null | undefined
+
 export const runTests = async () => {
   let total = 0
   const tests = loadTestCases()
@@ -484,9 +451,9 @@ export const runTests = async () => {
   for (const testCase of tests) {
     // mock out console.log to display logs nicer
 
-    const logged: any[][] = []
+    const logged: LogArg[][] = []
     const oldConsoleLog = console.log
-    console.log = (...args: any[]) => logged.push(args)
+    console.log = (...args: LogArg[]) => logged.push(args)
     const args = process.argv.slice(2)
     const noSkip = args.includes("no-skip")
     const result = runTest(testCase, !noSkip)

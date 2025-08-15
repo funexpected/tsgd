@@ -1,16 +1,14 @@
 import fs from "fs"
-import path from "path"
 
 import chalk from "chalk"
 import chokidar, { FSWatcher } from "chokidar"
 import ts from "typescript"
 
+import { displayErrors, TsGdError } from "../errors"
 import LibraryBuilder from "../generate_library_defs"
 import { ParsedArgs } from "../parse_args"
-import { displayErrors, TsGdError } from "../errors"
 
-import { GodotProjectFile } from "./godot_project_file"
-import { Paths } from "./paths"
+import { partition } from "./itertools"
 import { AssetFont } from "./assets/asset_font"
 import { AssetGlb } from "./assets/asset_glb"
 import { AssetGodotScene } from "./assets/asset_godot_scene"
@@ -18,6 +16,8 @@ import { AssetImage } from "./assets/asset_image"
 import { AssetSourceFile } from "./assets/asset_source_file"
 import { BaseAsset } from "./assets/base_asset"
 import DefinitionBuilder from "./generate_dynamic_defs"
+import { GodotProjectFile } from "./godot_project_file"
+import { Paths } from "./paths"
 
 // TODO: Instead of manually scanning to find all assets, i could just import
 // all godot files, and then parse them for all their asset types. It would
@@ -62,38 +62,44 @@ export class TsGdProject {
     return this.assets.filter((a): a is AssetImage => a instanceof AssetImage)
   }
 
-  mainScene: AssetGodotScene
-
-  program: ts.WatchOfConfigFile<ts.EmitAndSemanticDiagnosticsBuilderProgram>
+  program: ts.Program
 
   args: ParsedArgs
 
   definitionBuilder = new DefinitionBuilder(this)
 
-  constructor(
-    watcher: FSWatcher,
-    initialFilePaths: string[],
-    program: ts.WatchOfConfigFile<ts.EmitAndSemanticDiagnosticsBuilderProgram>,
-    ts2gdJson: Paths,
+  constructor(options: {
+    watcher?: FSWatcher
+    initialFilePaths: string[]
+    program: ts.Program
+    ts2gdJson: Paths
     args: ParsedArgs
-  ) {
+  }) {
     // Initial set up
 
-    this.args = args
-    this.paths = ts2gdJson
-    this.program = program
+    this.args = options.args
+    this.paths = options.ts2gdJson
+    this.program = options.program
 
     // Parse assets
 
-    const projectGodot = initialFilePaths.filter((path) =>
+    const projectGodot = options.initialFilePaths.filter((path) =>
       path.includes("project.godot")
     )[0]
 
-    this.godotProject = this.createAsset(projectGodot)! as GodotProjectFile
-
-    const initialAssets = initialFilePaths.map((path) => this.createAsset(path))
-
-    for (const asset of initialAssets) {
+    this.godotProject =
+      (this.createAsset(projectGodot) as GodotProjectFile) ??
+      (() => {
+        throw Error(
+          "No project.godot file found at" +
+            `${this.paths.rootPath}/project.godot!` +
+            "Please run ts2gd --init to create one."
+        )
+      })()
+    const assets = options.initialFilePaths
+      .map((a) => this.createAsset(a))
+      .filter(Boolean)
+    for (const asset of assets) {
       if (asset === null) {
         continue
       }
@@ -106,12 +112,15 @@ export class TsGdProject {
         this.godotProject = asset
       }
     }
+    if (!this.godotProject) {
+      throw Error(
+        "No project.godot file found at" +
+          `${this.paths.rootPath}/project.godot!` +
+          "Please run ts2gd --init to create one."
+      )
+    }
 
-    this.mainScene = this.godotScenes().find(
-      (scene) => scene.resPath === this.godotProject.mainScene().resPath
-    )!
-
-    this.monitor(watcher)
+    this.monitor(options.watcher)
   }
 
   createAsset(
@@ -149,9 +158,9 @@ export class TsGdProject {
     return null
   }
 
-  monitor(watcher: FSWatcher) {
+  monitor(watcher?: FSWatcher) {
     watcher
-      .on("add", async (path) => {
+      ?.on("add", async (path) => {
         const message = await this.onAddAsset(path)
 
         displayErrors(this.args, message)
@@ -232,7 +241,7 @@ export class TsGdProject {
     let oldAsset = this.assets.find((asset) => asset.fsPath === path)
 
     if (oldAsset) {
-      let newAsset = this.createAsset(path) as any as BaseAsset
+      let newAsset = this.createAsset(path) as BaseAsset
       this.assets = this.assets.filter((a) => a.fsPath !== path)
       this.assets.push(newAsset)
 
@@ -325,10 +334,10 @@ export class TsGdProject {
 
 export const makeTsGdProject = async (
   ts2gdJson: Paths,
-  program: ts.WatchOfConfigFile<ts.EmitAndSemanticDiagnosticsBuilderProgram>,
+  program: ts.Program,
   args: ParsedArgs
 ) => {
-  const [watcher, initialFiles] = await new Promise<[FSWatcher, string[]]>(
+  const [watcher, initialFilePaths] = await new Promise<[FSWatcher, string[]]>(
     (resolve) => {
       const initialFiles: string[] = []
       const watcher = chokidar
@@ -345,7 +354,13 @@ export const makeTsGdProject = async (
     }
   )
 
-  return new TsGdProject(watcher, initialFiles, program, ts2gdJson, args)
+  return new TsGdProject({
+    watcher,
+    initialFilePaths,
+    program,
+    ts2gdJson,
+    args,
+  })
 }
 
 export default TsGdProject

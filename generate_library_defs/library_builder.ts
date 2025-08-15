@@ -18,6 +18,12 @@ import {
   sanitizeGodotNameForTs,
 } from "./generation_utils"
 
+// TODO: It is really messy behavior to disable linter here,
+// but it will take a lot of time to fix all the issues.
+// consider using typia here
+// see [funexpected/tsgd#10](https://github.com/funexpected/tsgd/issues/10)
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export class LibraryBuilder {
   constructor(private paths: Paths) {
     fs.mkdirSync(this.paths.staticGodotDefsPath, { recursive: true })
@@ -374,5 +380,7 @@ declare var ${className}: typeof ${className}Constructor & {
     }
   }
 }
+
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export default LibraryBuilder

@@ -86,7 +86,7 @@ const parseExportsArrayElement = (
   node: ts.ArrayTypeNode,
   props: ParseState
 ): string[] => {
-  let elementType = node.elementType
+  let elementType: ts.TypeNode | ts.EntityName = node.elementType
   const godotExportArgs = []
 
   if (ts.isArrayTypeNode(elementType)) {
@@ -111,7 +111,7 @@ const parseExportsArrayElement = (
     // TODO: to remove this 'as any' cast the 'getGodotType' function
     //       should be adjusted to allow other types of nodes than 'ts.TypeNode'
     //       for actualType argument
-    elementType = elementType.typeName as any
+    elementType = elementType.typeName // as any
   }
 
   if (

@@ -37,11 +37,21 @@ module.exports = [
       "import/no-duplicates": "error",
       "import/order": ["error", { "newlines-between": "always" }],
       "@typescript-eslint/no-floating-promises": "error",
-      "prefer-const": "off",
-      "@typescript-eslint/no-empty-function": "off",
-      "@typescript-eslint/no-explicit-any": "off",
+      // "prefer-const": "off",
+      // "@typescript-eslint/no-empty-function": "off",
+      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/no-non-null-assertion": "off",
-    },
+      "@typescript-eslint/no-non-null-assertion": "error",
+      // TODO: Enable this rule when the codebase is more stable
+      // "@typescript-eslint/no-unsafe-type-assertion": "error"
+      // Example: forbid using `startsWith` on strings for tsgd projects
+      // "no-restricted-syntax": [
+      //     "warn",
+      //     {
+      //         "selector": "CallExpression[callee.property.name='startsWith']",
+      //         "message": "setTimeout must always be invoked with two arguments."
+      //     }
+      // ]
+    }
   },
 ]

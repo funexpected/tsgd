@@ -126,8 +126,8 @@ const x: Blah = new Blah();
 ### test-name: variable_declaration/autoload_variable_declaration3
 
 ```typescript
-@autoload()
-export class Blah {
+@autoload
+export default class Blah {
   test() {
     const blah: Blah = new Blah();
   }

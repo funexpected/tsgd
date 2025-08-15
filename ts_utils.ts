@@ -151,12 +151,12 @@ export const syntaxKindToString = (kind: ts.Node["kind"]) => {
  * NOTE: Boy, this function is a mess. The logic is straightforward, though.
  */
 export function getGodotType(
-  node: ts.Node,
+  node: ts.Node | ts.EntityName,
   typecheckerInferredType: ts.Type,
   props: ParseState,
   isExport: boolean,
   initializer?: ts.Expression,
-  actualType?: ts.TypeNode
+  actualType?: ts.TypeNode | ts.EntityName
 ): string | null {
   // If we have a precise initializer, use that first
 

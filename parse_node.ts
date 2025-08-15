@@ -111,9 +111,11 @@ export type ParseNodeType = {
   extraLines?: ExtraLine[]
 }
 
-const isTsNodeArray = <T extends ts.Node>(x: any): x is ts.NodeArray<T> => {
+const isTsNodeArray = <T extends ts.Node>(
+  x: object | undefined
+): x is ts.NodeArray<T> => {
   // Poor man's hack
-  return x && "pos" in x && "find" in x
+  return !!x && "pos" in x && "find" in x
 }
 
 export function combine(args: {
@@ -223,9 +225,17 @@ export function combine(args: {
     parsedNode.content = formattedContent
   }
 
-  let stringResult = parsedObjs
-    ? parsedObjs(...parsedNodes)
-    : parsedStrings!(...parsedNodes.map((node) => node.content))
+  let stringResult: string
+  if (parsedObjs) {
+    stringResult = parsedObjs(...parsedNodes)
+  } else if (parsedStrings) {
+    stringResult = parsedStrings(...parsedNodes.map((node) => node.content))
+  } else {
+    // will never happen
+    throw new Error("parsedStrings or parsedObjs required")
+  }
+  // ? parsedStrings(...parsedNodes.map((node) => node.content))
+  // : parsedObjs(...parsedNodes)
   const initialWhitespaceLength =
     stringResult.length - stringResult.trimLeft().length
   stringResult =
