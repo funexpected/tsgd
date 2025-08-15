@@ -232,7 +232,7 @@ export class TsGdProject {
     let oldAsset = this.assets.find((asset) => asset.fsPath === path)
 
     if (oldAsset) {
-      let newAsset = this.createAsset(path) as any as BaseAsset
+      let newAsset = this.createAsset(path) as BaseAsset
       this.assets = this.assets.filter((a) => a.fsPath !== path)
       this.assets.push(newAsset)
 

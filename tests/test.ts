@@ -322,6 +322,8 @@ const trim = (s: string) => {
     .join("\n")
 }
 
+const addError = (error: any) => {}
+
 const removeCommentLines = (s: string) => {
   return s
     .split("\n")
