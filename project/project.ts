@@ -2,7 +2,7 @@ import fs from "fs"
 import path from "path"
 
 import chalk from "chalk"
-import chokidar from "chokidar"
+import chokidar, { FSWatcher } from "chokidar"
 import ts from "typescript"
 
 import LibraryBuilder from "../generate_library_defs"
@@ -71,7 +71,7 @@ export class TsGdProject {
   definitionBuilder = new DefinitionBuilder(this)
 
   constructor(
-    watcher: chokidar.FSWatcher,
+    watcher: FSWatcher,
     initialFilePaths: string[],
     program: ts.WatchOfConfigFile<ts.EmitAndSemanticDiagnosticsBuilderProgram>,
     ts2gdJson: Paths,
@@ -149,7 +149,7 @@ export class TsGdProject {
     return null
   }
 
-  monitor(watcher: chokidar.FSWatcher) {
+  monitor(watcher: FSWatcher) {
     watcher
       .on("add", async (path) => {
         const message = await this.onAddAsset(path)
@@ -328,22 +328,22 @@ export const makeTsGdProject = async (
   program: ts.WatchOfConfigFile<ts.EmitAndSemanticDiagnosticsBuilderProgram>,
   args: ParsedArgs
 ) => {
-  const [watcher, initialFiles] = await new Promise<
-    [chokidar.FSWatcher, string[]]
-  >((resolve) => {
-    const initialFiles: string[] = []
-    const watcher = chokidar
-      .watch(ts2gdJson.rootPath, {
-        // build only needs to scan once and then can turn off
-        persistent: !args.buildOnly,
-        ignored: ts2gdJson.ignoredPaths(),
-      })
-      .on("add", (path) => initialFiles.push(path))
-      .on("ready", () => {
-        watcher.removeAllListeners()
-        resolve([watcher, initialFiles])
-      })
-  })
+  const [watcher, initialFiles] = await new Promise<[FSWatcher, string[]]>(
+    (resolve) => {
+      const initialFiles: string[] = []
+      const watcher = chokidar
+        .watch(ts2gdJson.rootPath, {
+          // build only needs to scan once and then can turn off
+          persistent: !args.buildOnly,
+          ignored: ts2gdJson.ignoredPaths(),
+        })
+        .on("add", (path) => initialFiles.push(path))
+        .on("ready", () => {
+          watcher.removeAllListeners()
+          resolve([watcher, initialFiles])
+        })
+    }
+  )
 
   return new TsGdProject(watcher, initialFiles, program, ts2gdJson, args)
 }

@@ -21,7 +21,10 @@ export const parseMethodDeclaration = (
   let isRemoteSync = false
   let isStatic = node.modifiers?.some((v) => v.getText() === "static") ?? false
 
-  for (const dec of node.decorators ?? []) {
+  const decorators = ts.canHaveDecorators(node)
+    ? ts.getDecorators(node)
+    : undefined
+  for (const dec of decorators ?? []) {
     if (dec.expression.getText() === "remote") {
       isRemote = true
     }

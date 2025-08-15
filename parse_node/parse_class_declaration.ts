@@ -85,7 +85,10 @@ export const parseClassDeclaration = (
     })
   }
 
-  const isAutoload = !!node.decorators?.find(
+  const decorators = ts.canHaveDecorators(node)
+    ? ts.getDecorators(node)
+    : undefined
+  const isAutoload = !!decorators?.find(
     (dec) => dec.expression.getText() === "autoload"
   )
 

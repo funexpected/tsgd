@@ -85,7 +85,10 @@ const getClassDeclarationHeader = (
     }
   }
 
-  const isTool = !!node.decorators?.find(
+  const decorators = ts.canHaveDecorators(node)
+    ? ts.getDecorators(node)
+    : undefined
+  const isTool = !!decorators?.find(
     (dec) => dec.expression.getText() === "tool"
   )
 
@@ -164,7 +167,10 @@ export const parseSourceFile = (
 
     const parsedStatement = parseNode(statement, props)
 
-    if (!statement.modifiers?.map((m) => m.getText()).includes("declare")) {
+    if (
+      (ts.isClassDeclaration(statement) || ts.isClassExpression(statement)) &&
+      !statement.modifiers?.map((m) => m.getText()).includes("declare")
+    ) {
       // TODO: Push this logic into class declaration and expression classes
 
       const classDecl = statement as ts.ClassDeclaration | ts.ClassExpression
@@ -235,11 +241,14 @@ export const parseSourceFile = (
   if (
     !classFile.mainClass &&
     // check if all inner classes are not marked explicitly @inner
-    !classFile.innerClasses.every((v) =>
-      (v.classDecl.decorators ?? [])
+    !classFile.innerClasses.every((v) => {
+      const decorators = ts.canHaveDecorators(v.classDecl)
+        ? ts.getDecorators(v.classDecl)
+        : undefined
+      return (decorators ?? [])
         .map((d) => d.expression.getText())
         .includes("inner")
-    )
+    })
   ) {
     addError({
       description: `Please mark one of ${classFile.innerClasses
