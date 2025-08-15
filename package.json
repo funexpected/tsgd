@@ -13,6 +13,9 @@
     "test-ci": "node js/tests/test.js",
     "project-test": "ts-node-dev --respawn --clear tests/project_tests.ts",
     "prepare": "husky install",
+    "lint-warn": "eslint .",
+    "lint-validate": "eslint . --max-warnings=0",
+    "lint-fix": "eslint . --fix",
     "lint-staged": "lint-staged",
     "generate-defs": "ts-node main.ts --buildLibraries --buildOnly mockProject/ts2gd.json"
   },
@@ -34,16 +37,8 @@
   },
   "lint-staged": {
     "*.ts": [
-      "eslint --fix"
-    ],
-    "*.{ts,json}": [
-      "prettier --write"
+      "eslint --max-warnings=0"
     ]
-  },
-  "husky": {
-    "hooks": {
-      "pre-push": "eslint . --max-warnings=0"
-    }
   },
   "dependencies": {
     "chalk": "^4.1.2",
@@ -60,7 +55,7 @@
     "@typescript-eslint/eslint-plugin": "^5.7.0",
     "@typescript-eslint/parser": "^5.7.0",
     "anymatch": "^3.1.2",
-    "eslint": "^8.5.0",
+    "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.25.3",
     "eslint-plugin-prettier": "^4.0.0",
     "husky": "^7.0.4",
