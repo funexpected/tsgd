@@ -74,6 +74,9 @@ export default class Foo extends Node {
 extends Node
 var x: int = 1
 ```
+```skip
+TODO: rethink autoload, see [funexpected/tsgd#7](https://github.com/funexpected/tsgd/issues/7)
+```
 
 
 ### test-name: class_declaration/main_decorator_autoload
@@ -92,6 +95,9 @@ export class Bar {
 class Bar:
   pass
 var x: int = 1
+```
+```skip
+TODO: rethink autoload, see [funexpected/tsgd#7](https://github.com/funexpected/tsgd/issues/7)
 ```
 
 

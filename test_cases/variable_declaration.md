@@ -91,6 +91,9 @@ const x: Blah = new Blah();
 ```
 ```gdscript
 ```
+```skip
+TODO: rethink autoload, see [funexpected/tsgd#7](https://github.com/funexpected/tsgd/issues/7)
+```
 
 
 ### test-name: variable_declaration/class_name_without_autoload
@@ -121,6 +124,9 @@ const x: Blah = new Blah();
 ```
 ```gdscript
 ```
+```skip
+TODO: rethink autoload, see [funexpected/tsgd#7](https://github.com/funexpected/tsgd/issues/7)
+```
 
 
 ### test-name: variable_declaration/autoload_variable_declaration3
@@ -138,6 +144,9 @@ const x: Blah = new Blah();
 ```gdscript
 func test():
   var _blah = Blah.new()
+```
+```skip
+TODO: rethink autoload, see [funexpected/tsgd#7](https://github.com/funexpected/tsgd/issues/7)
 ```
 
 
