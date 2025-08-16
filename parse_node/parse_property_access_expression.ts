@@ -50,8 +50,7 @@ export const parsePropertyAccessExpression = (
 
   // Compile things like KeyList.KEY_SPACE into KEY_SPACE
   if (isEnumType(exprType)) {
-    const symbol = exprType.getSymbol()!
-    const declarations = symbol.declarations
+    const declarations = exprType.getSymbol()?.declarations
 
     let isGlobal = false
     if (declarations) {

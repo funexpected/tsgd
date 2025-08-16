@@ -87,7 +87,15 @@ export class TsGdProject {
       path.includes("project.godot")
     )[0]
 
-    this.godotProject = this.createAsset(projectGodot)! as GodotProjectFile
+    this.godotProject =
+      (this.createAsset(projectGodot) as GodotProjectFile) ??
+      (() => {
+        throw Error(
+          "No project.godot file found at" +
+            `${this.paths.rootPath}/project.godot!` +
+            "Please run ts2gd --init to create one."
+        )
+      })()
     const assets = options.initialFilePaths
       .map((a) => this.createAsset(a))
       .filter(Boolean)

@@ -305,7 +305,11 @@ export class AssetGodotScene extends BaseAsset {
     )
 
     this.name = path.basename(fsPath, ".tscn")
-    this.rootNode = this.nodes.find((node) => !node.parent)!
+    this.rootNode =
+      this.nodes.find((node) => !node.parent) ??
+      (() => {
+        throw new Error("Scene file without root node somehow at " + fsPath)
+      })()
   }
 
   /** e.g. import('/Users/johnfn/GodotGame/scripts/Enemy').Enemy */
