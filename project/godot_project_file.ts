@@ -50,6 +50,8 @@ export class GodotProjectFile {
   project: TsGdProject
 
   constructor(path: string, project: TsGdProject) {
+    // TODO: consider using typia for data validation
+    // see [funexpected/tsgd#10](https://github.com/funexpected/tsgd/issues/10)
     this.rawConfig = parseGodotConfigFile(path, {
       autoload: {},
       // autoload: [],

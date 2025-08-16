@@ -280,6 +280,8 @@ export class AssetGodotScene extends BaseAsset {
   constructor(fsPath: string, project: TsGdProject) {
     super()
 
+    // TODO: consider using typia for data validation
+    // see [funexpected/tsgd#10](https://github.com/funexpected/tsgd/issues/10)
     const sceneFile = parseGodotConfigFile(fsPath, {
       ext_resource: [],
       sub_resource: [],
