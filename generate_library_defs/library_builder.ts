@@ -18,6 +18,10 @@ import {
   sanitizeGodotNameForTs,
 } from "./generation_utils"
 
+// TODO: I believe it is Good idea to define interfaces here and
+// validate types using typia
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export class LibraryBuilder {
   constructor(private paths: Paths) {
     fs.mkdirSync(this.paths.staticGodotDefsPath, { recursive: true })
@@ -374,5 +378,7 @@ declare var ${className}: typeof ${className}Constructor & {
     }
   }
 }
+
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export default LibraryBuilder

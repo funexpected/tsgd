@@ -111,9 +111,11 @@ export type ParseNodeType = {
   extraLines?: ExtraLine[]
 }
 
-const isTsNodeArray = <T extends ts.Node>(x: any): x is ts.NodeArray<T> => {
+const isTsNodeArray = <T extends ts.Node>(
+  x: object | undefined
+): x is ts.NodeArray<T> => {
   // Poor man's hack
-  return x && "pos" in x && "find" in x
+  return !!x && "pos" in x && "find" in x
 }
 
 export function combine(args: {

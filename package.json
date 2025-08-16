@@ -35,7 +35,7 @@
     "semi": false
   },
   "lint-staged": {
-    "*.ts": [
+    "!(mockProject/**)*.ts": [
       "eslint --max-warnings=0"
     ]
   },

@@ -3,8 +3,8 @@ import path from "path"
 import chalk from "chalk"
 
 import { ErrorName, addError } from "../../errors"
+import { Data, parseGodotConfigFile } from "../godot_parser"
 import TsGdProject from "../project"
-import { parseGodotConfigFile } from "../godot_parser"
 
 import { AssetGlb } from "./asset_glb"
 import { AssetSourceFile } from "./asset_source_file"
@@ -13,7 +13,7 @@ import { BaseAsset } from "./base_asset"
 interface IGodotSceneFile {
   gd_scene: {
     $section: {
-      load_steps: number
+      load_steps?: number
       format: number
     }
   }
@@ -56,7 +56,7 @@ interface IGodotSceneFile {
       identifier: string
     }
 
-    [key: string]: any
+    [key: string]: Data
   }[]
 }
 
@@ -282,8 +282,9 @@ export class AssetGodotScene extends BaseAsset {
 
     const sceneFile = parseGodotConfigFile(fsPath, {
       ext_resource: [],
+      sub_resource: [],
       node: [],
-    }) as IGodotSceneFile
+    }) as unknown as IGodotSceneFile
 
     this.fsPath = fsPath
     this.project = project
