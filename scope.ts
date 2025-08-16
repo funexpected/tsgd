@@ -3,7 +3,7 @@ import ts, { SyntaxKind } from "typescript"
 export class Scope {
   namesInScope: [
     ts.BindingName | ts.ParameterDeclaration | undefined,
-    string
+    string,
   ][][] = [[]]
   program: ts.Program
 

@@ -76,7 +76,7 @@ export class AssetSourceFile extends BaseAsset {
   reload() {}
 
   private getAst(): TsGdError | ts.SourceFile {
-    const ast = this.project.program.getProgram().getSourceFile(this.fsPath)
+    const ast = this.project.program.getSourceFile(this.fsPath)
 
     if (!ast) {
       return {
@@ -128,7 +128,7 @@ This is a ts2gd bug. Please create an issue on GitHub for it.`,
 
     return !realName && node.modifiers?.some((v) => v.getText() === "default")
       ? "default"
-      : node.name?.text ?? "Anonymous"
+      : (node.name?.text ?? "Anonymous")
   }
 
   extendedClassName(): string | TsGdError | null {
@@ -251,8 +251,11 @@ ${chalk.green(
     if (classNode && "error" in classNode) {
       return false
     }
-
-    for (const dec of classNode?.decorators ?? []) {
+    const decorators =
+      classNode && ts.canHaveDecorators(classNode)
+        ? ts.getDecorators(classNode)
+        : undefined
+    for (const dec of decorators ?? []) {
       if (dec.expression.getText() === "autoload") {
         return true
       }
@@ -315,13 +318,11 @@ Second path: ${chalk.yellow(sf.fsPath)}`,
     }
   }
 
-  async compile(
-    watchProgram: ts.WatchOfConfigFile<ts.EmitAndSemanticDiagnosticsBuilderProgram>
-  ): Promise<void> {
+  async compile(program: ts.Program): Promise<void> {
     const oldAutoloadClassName = this.getAutoloadNameFromExportedVariable()
 
     let fsContent = await fs.readFile(this.fsPath, "utf-8")
-    let sourceFileAst = watchProgram.getProgram().getSourceFile(this.fsPath)
+    let sourceFileAst = program.getSourceFile(this.fsPath)
     let tries = 0
 
     while (
@@ -333,7 +334,7 @@ Second path: ${chalk.yellow(sf.fsPath)}`,
       ++tries < 50
     ) {
       await new Promise((resolve) => setTimeout(resolve, 10))
-      sourceFileAst = watchProgram.getProgram().getSourceFile(this.fsPath)
+      sourceFileAst = program.getSourceFile(this.fsPath)
       if (sourceFileAst) {
         fsContent = await fs.readFile(this.fsPath, "utf-8")
       }
@@ -351,13 +352,13 @@ Second path: ${chalk.yellow(sf.fsPath)}`,
     }
 
     const parsedNode = parseNode(sourceFileAst, {
+      program,
       indent: "",
       isConstructor: false,
-      scope: new Scope(watchProgram.getProgram().getProgram()),
+      scope: new Scope(program),
       project: this.project,
       mostRecentControlStructureIsSwitch: false,
       isAutoload: this.isProjectAutoload(),
-      program: watchProgram.getProgram().getProgram(),
       usages: utils.collectVariableUsage(sourceFileAst),
       sourceFile: sourceFileAst,
       sourceFileAsset: this,

@@ -1,3 +1,3 @@
 #!/usr/bin/env node
 
-require("../js/main.js")
+import "../js/main.js"

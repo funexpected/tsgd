@@ -4,8 +4,11 @@ import util from "util"
 /**
  * Basic Godot configuration file parser.
  */
+export type Dict = { [key: string]: Data }
+export type Data = number | string | boolean | null | undefined | Data[] | Dict
+// type Data = InnerData | { [key: string]: InnerData }
 
-export const parseGodotConfigFile = (path: string, initial: any = {}) => {
+export const parseGodotConfigFile = (path: string, initial: Dict = {}) => {
   const file = fs.readFileSync(path, "utf-8")
 
   let index = 0
@@ -101,7 +104,7 @@ export const parseGodotConfigFile = (path: string, initial: any = {}) => {
   const getSection = () => {
     getchar("[")
 
-    let result: { [key: string]: any } & { identifier: string } = {
+    let result: Dict & { identifier: string } = {
       identifier: getIdentifier(),
     }
 
@@ -135,8 +138,8 @@ export const parseGodotConfigFile = (path: string, initial: any = {}) => {
     return variableName
   }
 
-  const getArray = (): any[] => {
-    let result: any[] = []
+  const getArray = (): Data[] => {
+    let result: Data[] = []
 
     getchar("[")
 
@@ -154,7 +157,7 @@ export const parseGodotConfigFile = (path: string, initial: any = {}) => {
   }
 
   const getJson = () => {
-    let result: { [key: string]: any } = {}
+    let result: Dict = {}
 
     getchar("{")
 
@@ -221,7 +224,7 @@ export const parseGodotConfigFile = (path: string, initial: any = {}) => {
 
   const getObject = (identifier: string) => {
     let result: {
-      args: any[]
+      args: Data[]
       identifier: string
     } = {
       args: [],
@@ -282,7 +285,7 @@ export const parseGodotConfigFile = (path: string, initial: any = {}) => {
   }
 
   let currentSection = { identifier: "globals" }
-  const result: { [key: string]: any } = {
+  const result: Dict = {
     globals: currentSection,
     ...initial,
   }
@@ -312,13 +315,15 @@ export const parseGodotConfigFile = (path: string, initial: any = {}) => {
         getchar("=")
 
         let variableValue = getValue()
-
-        if (Array.isArray(result[currentSection.identifier])) {
-          result[currentSection.identifier][
-            result[currentSection.identifier].length - 1
-          ][variableName] = variableValue
+        const id = currentSection.identifier
+        if (Array.isArray(result[id])) {
+          // Last is always dict
+          let last = result[id][result[id].length - 1] as Dict
+          last[variableName] = variableValue
         } else {
-          result[currentSection.identifier][variableName] = variableValue
+          // or dict
+          let dict = result[id] as Dict
+          dict[variableName] = variableValue
         }
       }
     }
@@ -331,9 +336,3 @@ export const parseGodotConfigFile = (path: string, initial: any = {}) => {
 
   return result
 }
-
-// const result = parseGodotConfigFile(
-//   "/Users/johnfn/GodotProject2/Scenes/MainScene.tscn"
-// )
-
-// console. log(util.inspect(result, false, 8, true))

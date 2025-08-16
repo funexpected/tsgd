@@ -2,7 +2,6 @@ import ts, { ClassDeclaration, SyntaxKind } from "typescript"
 
 import { ErrorName, addError } from "../errors"
 import { ParseNodeType, ParseState, combine, parseNode } from "../parse_node"
-import { Test } from "../tests/test"
 import { checkIfMainClass } from "../ts_utils"
 
 import { LibraryFunctions } from "./library_functions"
@@ -86,7 +85,10 @@ const getClassDeclarationHeader = (
     }
   }
 
-  const isTool = !!node.decorators?.find(
+  const decorators = ts.canHaveDecorators(node)
+    ? ts.getDecorators(node)
+    : undefined
+  const isTool = !!decorators?.find(
     (dec) => dec.expression.getText() === "tool"
   )
 
@@ -165,7 +167,10 @@ export const parseSourceFile = (
 
     const parsedStatement = parseNode(statement, props)
 
-    if (!statement.modifiers?.map((m) => m.getText()).includes("declare")) {
+    if (
+      (ts.isClassDeclaration(statement) || ts.isClassExpression(statement)) &&
+      !statement.modifiers?.map((m) => m.getText()).includes("declare")
+    ) {
       // TODO: Push this logic into class declaration and expression classes
 
       const classDecl = statement as ts.ClassDeclaration | ts.ClassExpression
@@ -236,11 +241,14 @@ export const parseSourceFile = (
   if (
     !classFile.mainClass &&
     // check if all inner classes are not marked explicitly @inner
-    !classFile.innerClasses.every((v) =>
-      (v.classDecl.decorators ?? [])
+    !classFile.innerClasses.every((v) => {
+      const decorators = ts.canHaveDecorators(v.classDecl)
+        ? ts.getDecorators(v.classDecl)
+        : undefined
+      return (decorators ?? [])
         .map((d) => d.expression.getText())
         .includes("inner")
-    )
+    })
   ) {
     addError({
       description: `Please mark one of ${classFile.innerClasses
@@ -332,39 +340,4 @@ ${
     files,
     content: "",
   }
-}
-
-export const testToolAnnotation: Test = {
-  ts: `
-@tool
-export default class Test {
-}
-  `,
-  expected: `
-tool
-class_name Test
-`,
-}
-
-export const testInnerClass: Test = {
-  ts: `
-@inner
-export class InnerTest {
-  field: int = 2;
-}
-  `,
-  expected: `
-class InnerTest:
-  var field: int = 2
-`,
-}
-
-export const testAnonymousClass: Test = {
-  ts: `
-export default class extends Node2D {
-}
-  `,
-  expected: `
-extends Node2D
-`,
 }

@@ -3,8 +3,8 @@ import path from "path"
 import chalk from "chalk"
 
 import { ErrorName, addError } from "../../errors"
+import { Data, parseGodotConfigFile } from "../godot_parser"
 import TsGdProject from "../project"
-import { parseGodotConfigFile } from "../godot_parser"
 
 import { AssetGlb } from "./asset_glb"
 import { AssetSourceFile } from "./asset_source_file"
@@ -13,7 +13,7 @@ import { BaseAsset } from "./base_asset"
 interface IGodotSceneFile {
   gd_scene: {
     $section: {
-      load_steps: number
+      load_steps?: number
       format: number
     }
   }
@@ -56,7 +56,7 @@ interface IGodotSceneFile {
       identifier: string
     }
 
-    [key: string]: any
+    [key: string]: Data
   }[]
 }
 
@@ -280,10 +280,13 @@ export class AssetGodotScene extends BaseAsset {
   constructor(fsPath: string, project: TsGdProject) {
     super()
 
+    // TODO: consider using typia for data validation
+    // see [funexpected/tsgd#10](https://github.com/funexpected/tsgd/issues/10)
     const sceneFile = parseGodotConfigFile(fsPath, {
       ext_resource: [],
+      sub_resource: [],
       node: [],
-    }) as IGodotSceneFile
+    }) as unknown as IGodotSceneFile
 
     this.fsPath = fsPath
     this.project = project
@@ -302,7 +305,11 @@ export class AssetGodotScene extends BaseAsset {
     )
 
     this.name = path.basename(fsPath, ".tscn")
-    this.rootNode = this.nodes.find((node) => !node.parent)!
+    this.rootNode =
+      this.nodes.find((node) => !node.parent) ??
+      (() => {
+        throw new Error("Scene file without root node somehow at " + fsPath)
+      })()
   }
 
   /** e.g. import('/Users/johnfn/GodotGame/scripts/Enemy').Enemy */

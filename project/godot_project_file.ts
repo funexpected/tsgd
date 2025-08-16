@@ -1,19 +1,19 @@
 import fs from "fs"
 
-import { parseGodotConfigFile } from "./godot_parser"
+import { Data, Dict, parseGodotConfigFile } from "./godot_parser"
 import TsGdProject from "./project"
 
 interface IRawGodotConfig {
   globals: {
     config_version: number
-    _global_script_classes: {
+    _global_script_classes?: {
       base: string
       class: string
       language: string
       path: string
     }[]
 
-    _global_script_class_icons: { [key: string]: string }
+    _global_script_class_icons?: { [key: string]: string }
   }
 
   application?: {
@@ -23,7 +23,7 @@ interface IRawGodotConfig {
   }
 
   autoload: { [key: string]: string }
-  debug: {
+  debug?: {
     "gdscript/warnings/unsafe_property_access": string
     "gdscript/warnings/unsafe_method_access": string
     "gdscript/warnings/unsafe_cast": string
@@ -33,7 +33,7 @@ interface IRawGodotConfig {
   input?: {
     [name: string]: {
       deadzone: number
-      events: any[]
+      events: Data[]
     }
   }
 
@@ -50,14 +50,17 @@ export class GodotProjectFile {
   project: TsGdProject
 
   constructor(path: string, project: TsGdProject) {
+    // TODO: consider using typia for data validation
+    // see [funexpected/tsgd#10](https://github.com/funexpected/tsgd/issues/10)
     this.rawConfig = parseGodotConfigFile(path, {
-      autoload: [],
-    }) as IRawGodotConfig
+      autoload: {},
+      // autoload: [],
+    }) as unknown as IRawGodotConfig
 
     this.project = project
     this.fsPath = path
-
-    this.autoloads = Object.values(this.rawConfig.autoload[0] ?? {})
+    const autoload = this.rawConfig.autoload as Dict
+    this.autoloads = Object.values(autoload ?? {})
       .filter((x) => typeof x === "string")
       .map((x) => ({
         // For some reason, the respath strings start with *, e.g. "*res://compiled/Enemy.gd"
@@ -113,33 +116,5 @@ export class GodotProjectFile {
     }
 
     fs.writeFileSync(this.fsPath, resultLines.join("\n"))
-  }
-
-  mainScene() {
-    let mainSceneResPath = this.rawConfig.application?.["run/main_scene"]
-
-    if (!mainSceneResPath) {
-      // If they don't have one, just take the first one
-
-      const allScenes = this.project.godotScenes()
-
-      if (allScenes.length > 1) {
-        console.warn(
-          "No main scene defined and more than one scene found! Choosing one arbitrarily."
-        )
-        console.warn("Please set a main scene in the Godot project settings.")
-        console.warn("\n")
-        console.warn("Scenes found:")
-
-        console.warn(allScenes.map((s) => s.fsPath).join("\n"))
-      }
-
-      mainSceneResPath = allScenes[0].resPath
-    }
-
-    return {
-      resPath: mainSceneResPath,
-      fsPath: this.project.paths.resPathToFsPath(mainSceneResPath),
-    }
   }
 }

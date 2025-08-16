@@ -160,6 +160,7 @@ import { Paths } from "./project/paths"
 import { checkVersionAsync, getInstalledVersion } from "./check_version"
 import { makeTsGdProject } from "./project/project"
 
+let watchProgram: ts.WatchOfConfigFile<ts.EmitAndSemanticDiagnosticsBuilderProgram>
 const setup = (tsgdJson: Paths) => {
   const formatHost: ts.FormatDiagnosticsHost = {
     getCanonicalFileName: (path: string) => path,
@@ -172,8 +173,6 @@ const setup = (tsgdJson: Paths) => {
   const tsInitializationFinished = new Promise<void>((resolve) => {
     tsUpdateResolve = resolve
   })
-
-  let watchProgram: ts.WatchOfConfigFile<ts.EmitAndSemanticDiagnosticsBuilderProgram>
 
   function reportDiagnostic(diagnostic: ts.Diagnostic) {
     const errorMessage = ts.flattenDiagnosticMessageText(
@@ -228,6 +227,7 @@ const setup = (tsgdJson: Paths) => {
     reportWatchStatusChanged
   )
   watchProgram = ts.createWatchProgram(host)
+
   const configFile = ts.readJsonConfigFile(
     tsgdJson.tsconfigPath,
     ts.sys.readFile
@@ -239,7 +239,7 @@ const setup = (tsgdJson: Paths) => {
   opt.config.useCaseSensitiveFileNames = false
 
   return {
-    watchProgram,
+    program: watchProgram.getProgram().getProgram(),
     tsgdJson,
     reportWatchStatusChanged,
     tsInitializationFinished,
@@ -265,10 +265,10 @@ export const main = async (args: ParsedArgs) => {
   const tsgdJson = new Paths(args)
 
   showLoadingMessage("Initializing TypeScript", args)
-  const { watchProgram, tsInitializationFinished } = setup(tsgdJson)
+  const { program, tsInitializationFinished } = setup(tsgdJson)
 
   showLoadingMessage("Scanning project", args)
-  let project = await makeTsGdProject(tsgdJson, watchProgram, args)
+  let project = await makeTsGdProject(tsgdJson, program, args)
 
   if (args.buildLibraries || project.shouldBuildLibraryDefinitions(args)) {
     showLoadingMessage("Building definition files", args)
